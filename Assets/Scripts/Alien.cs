@@ -18,10 +18,13 @@ public class Alien : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		agent = GetComponent<NavMeshAgent>();
+		setObjectState ();
 	}
 	
 	// Update is called once per frame
 	void Update () {
+
+		if (GameManager.Pause) { return; }
 
 		if (isAlive) {
 			navigationTime += Time.deltaTime;
@@ -71,5 +74,30 @@ public class Alien : MonoBehaviour {
 			deathParticles = GetComponentInChildren<DeathParticles>();
 		}
 		return deathParticles;
+	}
+
+	void OnPauseGame ()
+	{
+		setObjectState ();
+	}
+
+	private void setObjectState() {
+		if (GameManager.Pause) {
+			setPausedState ();
+		} else {
+			setResumeState ();
+		}
+	}
+
+	private void setPausedState() {
+		transform.Find("BobbleEnemy-Body").GetComponent<Animator> ().SetBool ("walking", false);
+		transform.Find("BobbleEnemy-Head").GetComponent<Animator> ().SetBool ("headbob", false);
+		agent.destination = transform.position;
+	}
+
+	private void setResumeState() {
+		transform.Find("BobbleEnemy-Body").GetComponent<Animator> ().SetBool ("walking", true);
+		transform.Find("BobbleEnemy-Head").GetComponent<Animator> ().SetBool ("headbob", true);
+		agent.destination = target.position;
 	}
 }

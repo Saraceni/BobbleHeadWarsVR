@@ -5,9 +5,8 @@ public class PlayerController : MonoBehaviour {
 	
 	public LayerMask layerMask;
 	public float moveSpeed = 50.0f;
-	public Rigidbody head;
-	public Rigidbody marineBody;
-	public Animator bodyAnimator;
+	public GameObject head;
+	public GameObject marineBody;
 	public float[] hitForce;
 	public float timeBetweenHits = 2.5f;
 	public GameObject hitOvelay;
@@ -20,6 +19,11 @@ public class PlayerController : MonoBehaviour {
 	private float timeSinceHit = 0;
 	private int hitNumber = -1;
 
+	private float f_front = 0;
+	private float f_back = 0;
+	private float f_right = 0;
+	private float f_left = 0;
+
 	// Use this for initialization
 	void Start () {
 		characterController = GetComponent<CharacterController>();
@@ -28,9 +32,23 @@ public class PlayerController : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+
+		if (GameManager.Pause) {
+			characterController.SimpleMove(Vector3.zero);
+			return;
+		}
+
+		if (GameManager.DesktopMode) {
+			setDirectionFromKeyBoard ();
+		} else {
+			setDirectionFromJoystick ();
+		}
+
+		Vector3 moveDirection = (marineBody.transform.forward * (f_front - f_back)) +
+		                        (marineBody.transform.right * (f_right - f_left));
+
+		characterController.SimpleMove(moveDirection.normalized * moveSpeed);
 		
-		Vector3 moveDirection = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
-		characterController.SimpleMove(moveDirection * moveSpeed);
 
 		if (isHit) {
 			timeSinceHit += Time.deltaTime;
@@ -42,33 +60,39 @@ public class PlayerController : MonoBehaviour {
 		}
 	}
 
-	void FixedUpdate() {
-		
-		Vector3 moveDirection = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
-		if (moveDirection == Vector3.zero) {
-			bodyAnimator.SetBool("IsMoving", false);
+	private float getDirectionState(KeyCode onState, KeyCode offState, float current) {
+		if (Input.GetKeyDown (onState)) {
+			return 1;
+		} else if (Input.GetKeyDown (offState)) {
+			return  0;
 		} else {
-			head.AddForce(transform.right * 150, ForceMode.Acceleration);
-			bodyAnimator.SetBool("IsMoving", true);
+			return current;
 		}
+	}
 
-		RaycastHit hit;
-		Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
-		// Debug.DrawRay(ray.origin, ray.direction * 1000, Color.green);
+	private void setDirectionFromKeyBoard() {
 
-		if (Physics.Raycast(ray, out hit, 1000, layerMask, QueryTriggerInteraction.Ignore)) {
-			
-			if (hit.point != currentLookTarget) {
-				currentLookTarget = hit.point;
-			}
+		f_front = getDirectionState(KeyCode.W, KeyCode.Space, f_front);
+		f_back = getDirectionState(KeyCode.S, KeyCode.Space, f_back);
+		f_right = getDirectionState(KeyCode.D, KeyCode.Space, f_right);
+		f_left = getDirectionState(KeyCode.A, KeyCode.Space, f_left);
+	}
 
-			// 1
-			Vector3 targetPosition = new Vector3(hit.point.x, transform.position.y, hit.point.z);
-			// 2
-			Quaternion rotation = Quaternion.LookRotation(targetPosition - transform.position);
-			// 3
-			transform.rotation = Quaternion.Lerp(transform.rotation, rotation, Time.deltaTime * 10.0f);
-		}
+	private void setDirectionFromJoystick() {
+
+		f_front = getDirectionState(KeyCode.JoystickButton0, KeyCode.JoystickButton1, f_front);
+		f_back = getDirectionState(KeyCode.JoystickButton6, KeyCode.JoystickButton7, f_back);
+		f_right = getDirectionState(KeyCode.JoystickButton4, KeyCode.JoystickButton5, f_right);
+		f_left = getDirectionState(KeyCode.JoystickButton2, KeyCode.JoystickButton3, f_left);
+	}
+
+	void FixedUpdate() {
+
+		Vector3 eulerAngles = new Vector3 (marineBody.transform.rotation.eulerAngles.x,
+			head.transform.rotation.eulerAngles.y, marineBody.transform.rotation.eulerAngles.z);
+
+		marineBody.transform.rotation = Quaternion.Euler (eulerAngles);
+
 	}
 
 	void OnTriggerEnter(Collider other) {
@@ -90,10 +114,9 @@ public class PlayerController : MonoBehaviour {
 
 	public void Die() {
 
-		bodyAnimator.SetBool("IsMoving", false);
 		marineBody.transform.parent = null;
-		marineBody.isKinematic = false;
-		marineBody.useGravity = true;
+		marineBody.GetComponent<Rigidbody>().isKinematic = false;
+		marineBody.GetComponent<Rigidbody>().useGravity = true;
 		marineBody.gameObject.GetComponent<CapsuleCollider>().enabled = true;
 		marineBody.gameObject.GetComponent<Gun>().enabled = false;
 
@@ -102,7 +125,8 @@ public class PlayerController : MonoBehaviour {
 
 		Destroy(head.gameObject.GetComponent<HingeJoint>());
 		head.transform.parent = null;
-		head.useGravity = true;
+		head.GetComponent<Rigidbody>().useGravity = true;
+		head.GetComponent<Rigidbody>().isKinematic = false;
 		SoundManager.Instance.PlayOneShot(SoundManager.Instance.marineDeath);
 		Destroy(gameObject);
 	}

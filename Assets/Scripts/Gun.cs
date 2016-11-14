@@ -11,6 +11,14 @@ public class Gun : MonoBehaviour {
 	private float currentTime;
 	private AudioSource audioSource;
 
+	private KeyCode startFiringKey;
+	private KeyCode stopFiringKey;
+
+	void Awake() {
+		startFiringKey = GameManager.DesktopMode ? KeyCode.O : KeyCode.JoystickButton10;
+		stopFiringKey = GameManager.DesktopMode ? KeyCode.L : KeyCode.JoystickButton11;
+	}
+
 	// Use this for initialization
 	void Start () {
 		audioSource = GetComponent<AudioSource>();
@@ -19,12 +27,14 @@ public class Gun : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 
-		if (Input.GetMouseButtonDown (0)) {
+
+		if (Input.GetKeyDown (startFiringKey)) {
 			if(!IsInvoking("fireBullet")) {
 				InvokeRepeating("fireBullet", 0f, 0.1f);
 			}
 		}
-		if (Input.GetMouseButtonUp (0)) {
+
+		if (Input.GetKeyDown (stopFiringKey)) {
 			CancelInvoke ("fireBullet");
 		}
 
@@ -35,9 +45,11 @@ public class Gun : MonoBehaviour {
 	}
 
 	void fireBullet() {
+
+		if (GameManager.Pause) { return; }
 		
 		Rigidbody bullet = createBullet ();
-		bullet.velocity =  transform.parent.forward * 100;
+		bullet.velocity =  transform.forward * 100;
 
 		if (isUpgraded) {
 			Rigidbody bullet2 = createBullet();

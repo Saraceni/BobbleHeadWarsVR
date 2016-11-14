@@ -4,6 +4,9 @@ using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour {
 
+	public static bool DesktopMode = false;
+	public static bool Pause = false;
+
 	public GameObject player;
 	public GameObject[] spawnPoints;
 	public GameObject alien;
@@ -27,22 +30,46 @@ public class GameManager : MonoBehaviour {
 	private float actualUpgradeTime = 0;
 	private float currentUpgradeTime = 0;
 
+
 	// Use this for initialization
 	void Start () {
 		actualUpgradeTime = Random.Range(upgradeMaxTimeSpawn - 3.0f, upgradeMaxTimeSpawn);
 		actualUpgradeTime = Mathf.Abs(actualUpgradeTime);
 	}
+
+
+	private bool gameOver = false;
 	
 	// Update is called once per frame
 	void Update () {
 
-		if (player == null) { return; }
+		if (Input.GetKeyDown (KeyCode.P) || Input.GetKeyDown (KeyCode.JoystickButton12)) {
+			Pause = !Pause;
+			Object[] objects = FindObjectsOfType (typeof(GameObject));
+			foreach (GameObject go in objects) {
+				go.SendMessage ("OnPauseGame", SendMessageOptions.DontRequireReceiver);
+			}
+		}
+
+		if (Pause) { return; }
+
+		if (player == null) { 
+			if (!gameOver) {
+				gameOver = true;
+				Invoke ("reloadLevel", 3f);
+			}
+			return; 
+		}
 		
 		currentSpawnTime += Time.deltaTime;
 		currentUpgradeTime += Time.deltaTime;
 
 		spawnAlienIfNeeded ();
 		spawnUpgradeIfNeeded ();
+	}
+
+	void reloadLevel() {
+		Application.LoadLevel (Application.loadedLevel);
 	}
 
 	void spawnUpgradeIfNeeded() {
@@ -126,8 +153,9 @@ public class GameManager : MonoBehaviour {
 	}
 
 	private void endGame() {
-		SoundManager.Instance.PlayOneShot (SoundManager.Instance.elevatorArrived);
-		arenaAnimator.SetTrigger ("PlayerWon");
+		
+		gameOver = true;
+		Invoke ("reloadLevel", 3f);
 	}
 
 	public void AlienDestroyed() {

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour {
 
-	public static bool DesktopMode = false;
+	public static bool DesktopMode = true;
 	public static bool Pause = false;
 
 	public GameObject player;
@@ -83,6 +83,7 @@ public class GameManager : MonoBehaviour {
 				GameObject upgrade = Instantiate(upgradePrefab) as GameObject;
 				Upgrade upgradeScript = upgrade.GetComponent<Upgrade>();
 				upgradeScript.gun = gun;
+				upgradeScript.OnPickup.AddListener (UpgradePicked);
 				upgrade.transform.position = spawnLocation.transform.position;
 				// 4
 				spawnedUpgrade = true;
@@ -165,5 +166,12 @@ public class GameManager : MonoBehaviour {
 		if (totalAliens == 0) {
 			Invoke("endGame", 2.0f);
 		}
+	}
+
+	public void UpgradePicked() {
+		spawnedUpgrade = false;
+		actualUpgradeTime = Random.Range(upgradeMaxTimeSpawn - 3.0f, upgradeMaxTimeSpawn);
+		actualUpgradeTime = Mathf.Abs(actualUpgradeTime);
+		currentUpgradeTime = 0;
 	}
 }

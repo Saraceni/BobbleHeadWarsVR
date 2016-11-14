@@ -29,13 +29,7 @@ public class Gun : MonoBehaviour {
 
 
 		if (Input.GetKeyDown (startFiringKey)) {
-			if(!IsInvoking("fireBullet")) {
-				InvokeRepeating("fireBullet", 0f, 0.1f);
-			}
-		}
-
-		if (Input.GetKeyDown (stopFiringKey)) {
-			CancelInvoke ("fireBullet");
+			fireBullet ();
 		}
 
 		currentTime += Time.deltaTime;
